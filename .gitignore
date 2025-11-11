@@ -1,0 +1,13 @@
+# --- Virtual Environment ---
+venv/
+
+# --- Secrets ---
+.env
+
+# --- Data & Indexes ---
+*.db
+*.faiss
+
+# --- Python Cache ---
+__pycache__/
+*.pyc
