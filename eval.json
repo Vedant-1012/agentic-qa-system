@@ -1,0 +1,10 @@
+[
+  {
+    "question": "Who is the most active user?",
+    "golden_answer": "Lily O'Sullivan"
+  },
+  {
+    "question": "How many messages did Thiago Monteiro send?",
+    "golden_answer": "361"
+  }
+]
