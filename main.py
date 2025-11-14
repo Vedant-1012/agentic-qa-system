@@ -169,9 +169,10 @@ async def startup_event():
 # --- 8. MAKE IT RUNNABLE ---
 if __name__ == "__main__":
     logger.info("Starting FastAPI server...")
+    port = int(os.environ.get("PORT", 10000))
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8080,
-        reload=True  # Safe now - no file logging to watch
+        port=port,
+        reload=True
     )
