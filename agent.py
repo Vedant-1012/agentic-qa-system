@@ -8,16 +8,15 @@ from dotenv import load_dotenv
 from tools import seek_facts, seek_context
 
 # --- 1. SET UP PROFESSIONAL LOGGING ---
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+# REMOVED basicConfig, ADDED this:
+logger = logging.getLogger(__name__)
+# ---
 
 # --- 2. LOAD API KEY & CONFIGURE GEMINI ---
 load_dotenv()  # Loads the .env file
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if not GEMINI_API_KEY:
-    logging.error("FATAL ERROR: GEMINI_API_KEY not found in .env file.")
+    logger.error("FATAL ERROR: GEMINI_API_KEY not found in .env file.")
     exit(1)
 
 try:
@@ -27,9 +26,9 @@ try:
         # Set safety to a minimum to avoid blocks on harmless words
         safety_settings={'HARASSMENT':'BLOCK_NONE', 'HATE':'BLOCK_NONE'}
     )
-    logging.info("Gemini Pro model configured successfully.")
+    logger.info("Gemini Pro model configured successfully.")
 except Exception as e:
-    logging.error(f"FATAL ERROR: Could not configure Gemini. {e}")
+    logger.error(f"FATAL ERROR: Could not configure Gemini. {e}")
     exit(1)
 
 
@@ -38,7 +37,7 @@ def _extract_entity(message: str, entity_type: str) -> str:
     """
     A dedicated LLM call to extract a specific entity from a message.
     """
-    logging.info(f"[Tool 3 Extractor] Extracting '{entity_type}' from: {message}")
+    logger.info(f"[Tool 3 Extractor] Extracting '{entity_type}' from: {message}")
     try:
         prompt = f"""
         You are an entity extractor. From the following text, extract the *specific* {entity_type}.
@@ -55,15 +54,15 @@ def _extract_entity(message: str, entity_type: str) -> str:
         # --- THIS IS THE FINAL FIX ---
         # Add a safety check in case Gemini blocks the response
         if not response.parts:
-            logging.warning("[Tool 3 Extractor] No content part returned (likely safety filter).")
+            logger.warning("[Tool 3 Extractor] No content part returned (likely safety filter).")
             return message # Fallback to the full message
         # --- END FIX ---
 
         entity = response.text.strip().replace('"', '').replace('\n', '')
-        logging.info(f"[Tool 3 Extractor] Extracted: {entity}")
+        logger.info(f"[Tool 3 Extractor] Extracted: {entity}")
         return entity
     except Exception as e:
-        logging.error(f"[Tool 3 Extractor] Failed: {e}")
+        logger.error(f"[Tool 3 Extractor] Failed: {e}", exc_info=True)
         return message # Fallback to the full message
 
 # --- UPDATED: TOOL 3: Action Recommender (Smarter Prioritization) ---
@@ -72,7 +71,7 @@ def get_recommendation(question: str, context: List[Dict[str, Any]]) -> Optional
     A smarter, evidence-based engine. It now prioritizes
     high-value keywords (like 'favorite') over generic ones.
     """
-    logging.info("[Tool 3: Recommender] Analyzing context for recommendations...")
+    logger.info("[Tool 3: Recommender] Analyzing context for recommendations...")
     
     question_lower = question.lower()
     if not isinstance(context, list):
@@ -84,7 +83,7 @@ def get_recommendation(question: str, context: List[Dict[str, Any]]) -> Optional
     # INTENT 1: Is this a "preference" question?
     is_preference_query = "like" in question_lower or "favorite" in question_lower
     if is_preference_query:
-        logging.info("[Tool 3] Question intent is 'preference'.")
+        logger.info("[Tool 3] Question intent is 'preference'.")
     
     for item in context:
         if item.get("source") == "Fact_Seeker": continue
@@ -94,7 +93,7 @@ def get_recommendation(question: str, context: List[Dict[str, Any]]) -> Optional
         # High-priority: explicit keywords
         if "favorite" in message or "lilies" in message or "roses" in message:
             if best_score < 2: # Only overwrite if this is a better match
-                logging.info(f"[Tool 3] Found HIGH-PRIORITY preference (rowid {item.get('rowid')})")
+                logger.info(f"[Tool 3] Found HIGH-PRIORITY preference (rowid {item.get('rowid')})")
                 best_score = 2
                 extracted_pref = _extract_entity(item['message'], "preference")
                 best_recommendation = {
@@ -106,7 +105,7 @@ def get_recommendation(question: str, context: List[Dict[str, Any]]) -> Optional
         # Low-priority: generic keywords (only if it's a preference query)
         elif is_preference_query and ("outstanding" in message or "concierge" in message):
             if best_score < 1: # Don't overwrite a high-priority match
-                logging.info(f"[Tool 3] Found LOW-PRIORITY preference (rowid {item.get('rowid')})")
+                logger.info(f"[Tool 3] Found LOW-PRIORITY preference (rowid {item.get('rowid')})")
                 best_score = 1
                 extracted_pref = _extract_entity(item['message'], "preference")
                 best_recommendation = {
@@ -118,17 +117,17 @@ def get_recommendation(question: str, context: List[Dict[str, Any]]) -> Optional
         # --- Check for Travel (only if we haven't found a preference) ---
         travel_keywords = ["trip", "flight", "planning", "distilleries", "journey"]
         if not is_preference_query and best_score == 0 and any(kw in message for kw in travel_keywords):
-            logging.info(f"[Tool 3] Found travel intent in message (rowid {item.get('rowid')})")
+            logger.info(f"[Tool 3] Found travel intent in message (rowid {item.get('rowid')})")
             best_score = 1
             extracted_trip = _extract_entity(item['message'], "trip_subject")
             best_recommendation = {
                 "action_id": "suggest_trip_itinerary",
-                "suggestion_text": f"I see a message about a trip to '{extracted_trip}'. Would you like me to start an itinerary?",
+                "suggestion_text": f"I see a message about a trip to '{extracted_trip}'. Would you like to start an itinerary?",
                 "structured_data": {"type": "travel", "value": extracted_trip, "source_message": item['message']}
             }
             
     if not best_recommendation:
-        logging.info("[Tool 3: Recommender] No specific recommendation found.")
+        logger.info("[Tool 3: Recommender] No specific recommendation found.")
         
     return best_recommendation
 
@@ -138,7 +137,7 @@ def synthesize_answer(question: str, context: List[Dict[str, Any]]) -> str:
     """
     Uses the Gemini LLM to generate a final, human-friendly answer.
     """
-    logging.info("[Tool 4: Synthesizer] Generating final answer with LLM...")
+    logger.info("[Tool 4: Synthesizer] Generating final answer with LLM...")
     
     # Create a clean prompt with our new structured context
     context_str = "\n".join(
@@ -163,12 +162,12 @@ def synthesize_answer(question: str, context: List[Dict[str, Any]]) -> str:
         
         # Add safety check here too
         if not response.parts:
-            logging.warning("[Tool 4 Synthesizer] No content part returned (likely safety filter).")
+            logger.warning("[Tool 4 Synthesizer] No content part returned (likely safety filter).")
             return "I found the context, but I am unable to formulate a response at this time."
             
         return response.text
     except Exception as e:
-        logging.error(f"[Synthesizer] Error generating content: {e}")
+        logger.error(f"[Synthesizer] Error generating content: {e}", exc_info=True)
         return "I'm sorry, I encountered an error while formulating a response."
 
 
@@ -181,7 +180,7 @@ def run_agent(question: str) -> Dict[str, Any]:
     3. Synthesize the final answer.
     4. Return the full, structured response.
     """
-    logging.info(f"\n--- New Query Received --- \nQuestion: {question}")
+    logger.info(f"\n--- New Query Received --- \nQuestion: {question}")
     trace = []
     
     # --- 1. ROUTER LOGIC ---
