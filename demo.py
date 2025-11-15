@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 # --- Configuration ---
 # We use an env var for the API URL to make it flexible
 # Fallback to localhost if not set
-API_URL = os.getenv("API_URL", "http://127.0.0.1:8080/ask") 
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000/ask")
 logger.info(f"Connecting Gradio Demo to API Server: {API_URL}")
 
 
@@ -459,8 +459,6 @@ with gr.Blocks(
 if __name__ == "__main__":
     logger.info("Launching Gradio Demo Interface...")
     demo.launch(
-        server_name="127.0.0.1",
-        server_port=7860,
-        share=False,
-        show_error=True
+    server_name=os.getenv("GRADIO_SERVER_NAME", "127.0.0.1"),
+    server_port=int(os.getenv("GRADIO_SERVER_PORT", "7860")),
     )

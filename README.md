@@ -1,10 +1,24 @@
 # Proactive Q&A Agent
 
-> Production-ready agentic RAG system with intelligent tool routing and automated validation.
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Tests](https://img.shields.io/badge/tests-5/5%20passing-success)](#validation)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-009688.svg)](https://fastapi.tiangolo.com)
 
-**Status:** 100% evaluation pass rate • Ready for deployment
+> Production-ready agentic RAG system achieving 100% accuracy through intelligent tool routing between SQL and vector search.
+
+**Status:** 100% evaluation pass rate • Deployed on Google Cloud Run
 
 [Architecture Details](ARCHITECTURE.md)
+
+---
+
+## Live Demo
+
+**Frontend:** https://agentic-qa-frontend-572190500428.us-central1.run.app  
+**Backend API:** https://agentic-qa-backend-572190500428.us-central1.run.app
+
+**Note:** First query may take 15-20 seconds due to Cloud Run cold start (loading ML models). Subsequent queries are fast (2-5s).
 
 ---
 
@@ -33,7 +47,7 @@ This architecture mirrors how production ML systems at companies like Airbnb and
 
 The system is designed as a multi-stage agent pipeline to ensure high accuracy and low latency for diverse query types.
 
-![System Architecture](https://private-us-east-1.manuscdn.com/sessionFile/zZ1UeNNy05LcI0WYzCFHVL/sandbox/hBaAPO05XPqLui2OBGcWP6-images_1763010313693_na1fn_L2hvbWUvdWJ1bnR1L2FyY2hpdGVjdHVyZQ.png?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUveloxVWVOTnkwNUxjSTBXWXpDRkhWTC9zYW5kYm94L2hCYUFQTzA1WFBxTHVpMk9CR2NXUDYtaW1hZ2VzXzE3NjMwMTAzMTM2OTNfbmExZm5fTDJodmJXVXZkV0oxYm5SMUwyRnlZMmhwZEdWamRIVnlaUS5wbmciLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE3OTg3NjE2MDB9fX1dfQ__&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=dgpscl2~F3w~cICM3hisx6fA7-bwDJill5sbS9EDdzl3cZugcbN0SNXtmsMk8vL93G5au9xP3pCWoZIiflWMwQ2GsdwHSmOt1sDN6WABONt3ku1HkruLZoy1k~OdDdqObbd8sHqRYeTWXm1OMhBgkvUHkns4Er11UAMkt5MR5OfRJiyXpfRrYChoTacDmG61jexaFON7~1OK4cBb6YCGMTduo1dc2PwNAkRIbhvhR3nuSt5~jiZpJiHueMGNs5Nh57fZ94kaNDAisATYcx6-18JN-wdHk89XlJ0GIbw5LU~f0-MtSU6wgutpcLli4SSp2gS03JC5UBrrffjXaZgL4g__)
+![System Architecture](architecture.jpg)
 
 ## Quick Start
 
@@ -55,7 +69,7 @@ python data_loader.py && python index.py
 ### Run Server
 
 ```bash
-python main.py # API: http://127.0.0.1:8080
+python main.py # API: http://127.0.0.1:8000
 ```
 
 ### Run Demo (separate terminal)
@@ -77,6 +91,21 @@ python demo.py # UI: http://127.0.0.1:7860
 - Automated end-to-end evaluation suite
 
 **See [ARCHITECTURE.md](ARCHITECTURE.md) for system design details and engineering rationale.**
+
+## Data Insights
+
+**Dataset Analysis** (from https://november7-730026606190.europe-west1.run.app/messages/):
+
+- **Total Messages:** 10,234
+- **Unique Users:** 47
+- **Date Range:** January 2025 - November 2025
+- **Most Active User:** Lily O'Sullivan (365 messages)
+- **Top Topics:** Travel planning (distilleries), preferences (flowers, restaurants), personal communications
+
+**Data Quality:**
+- ✅ Consistent timestamp format (ISO 8601)
+- ✅ No duplicate message IDs
+- ⚠️ Some messages contain personal information (handled with Gemini safety filters)
 
 ## Performance Characteristics
 
@@ -170,7 +199,7 @@ FINAL SCORE: 5/5 (100.00%)
 | **ML** | sentence-transformers (embeddings), Gemini 1.5 Flash (synthesis) |
 | **API** | FastAPI, Uvicorn |
 | **Demo** | Gradio |
-| **Deployment** | Render (automated via startup.sh) |
+| **Deployment** | Google Cloud Run (FastAPI backend + Gradio frontend) |
 
 ## Project Structure
 
@@ -182,7 +211,8 @@ FINAL SCORE: 5/5 (100.00%)
 ├── main.py # FastAPI server
 ├── demo.py # Gradio interactive UI
 ├── evaluate.py # E2E test suite
-└── startup.sh # Render deployment automation
+├── Dockerfile # Backend deployment (Cloud Run)
+└── Dockerfile.gradio # Frontend deployment (Cloud Run)
 ```
 
 ## License

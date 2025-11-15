@@ -5,8 +5,8 @@ venv/
 .env
 
 # --- Data & Indexes ---
-# *.db
-# *.faiss
+*.db
+*.faiss
 
 # --- Python Cache ---
 __pycache__/
